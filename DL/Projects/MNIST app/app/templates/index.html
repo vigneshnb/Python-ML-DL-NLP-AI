@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="/" aria-label="MNIST AI home">
+      <span class="brand__logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+          <rect x="3" y="3" width="26" height="26" rx="7" stroke="currentColor" stroke-width="2"/>
+          <path d="M11 10.5c1.6-1.6 5-1.8 6.4.2 1.3 1.9-.4 4.2-2.4 5.6L11 21.5h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <strong>MNIST AI</strong>
+        <small>Handwritten Digit Recognition</small>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#predict" class="nav__link is-active">Predict</a>
+      <a href="#insights" class="nav__link">Insights</a>
+      <a href="#model" class="nav__link">Model</a>
+    </nav>
+
+    <div class="topbar__right">
+      <div class="status" id="modelStatus" data-state="loading" role="status" aria-live="polite">
+        <span class="status__dot"></span>
+        <span class="status__text">Checking model…</span>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Welcome -->
+  <section class="hero">
+    <span class="badge"><span class="badge__spark" aria-hidden="true">✦</span> AI-powered</span>
+    <h1>Turn Handwriting Into <span class="gradient-text">Intelligence</span></h1>
+    <p>Upload a handwritten digit and let AI identify it instantly.</p>
+  </section>
+
+  <!-- Upload + Result -->
+  <section class="grid" id="predict">
+    <article class="card card--upload">
+      <header class="card__head">
+        <div>
+          <h2>Upload image</h2>
+          <p class="muted">PNG, JPG or JPEG · up to {{ max_upload_mb }} MB</p>
+        </div>
+        <span class="step">01</span>
+      </header>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" data-max-mb="{{ max_upload_mb }}"
+           aria-label="Upload an image: drag and drop or press Enter to browse">
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+        <div class="dropzone__empty" id="dropEmpty">
+          <div class="dropzone__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+            </svg>
+          </div>
+          <p class="dropzone__title">Drag &amp; drop your digit here</p>
+          <p class="muted">or <span class="link">click to browse</span></p>
+        </div>
+        <div class="dropzone__preview" id="dropPreview" hidden>
+          <img id="previewImg" alt="Uploaded image preview">
+        </div>
+      </div>
+
+      <div class="file-meta" id="fileMeta" hidden>
+        <div class="file-meta__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+        </div>
+        <div class="file-meta__info">
+          <span class="file-meta__name" id="fileName">—</span>
+          <span class="muted file-meta__sub"><span id="fileDims">—</span> · <span id="fileSize">—</span></span>
+        </div>
+        <button class="icon-btn" id="removeBtn" type="button" aria-label="Remove image" title="Remove image">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="alert" id="alert" role="alert" hidden></div>
+
+      <div class="actions">
+        <button class="btn btn--primary" id="predictBtn" type="button" disabled>
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn__label">Predict Digit</span>
+        </button>
+        <button class="btn btn--ghost" id="clearBtn" type="button">Clear / Reset</button>
+      </div>
+    </article>
+
+    <article class="card card--result" id="resultCard" data-state="idle" aria-live="polite">
+      <header class="card__head">
+        <div>
+          <h2>Prediction</h2>
+          <p class="muted" id="resultStatus">Waiting for an image</p>
+        </div>
+        <span class="step">02</span>
+      </header>
+
+      <div class="result">
+        <div class="result__digit-wrap">
+          <div class="result__ring" id="confidenceRing" style="--p:0">
+            <span class="result__digit" id="predDigit">–</span>
+          </div>
+          <span class="muted small">Predicted digit</span>
+        </div>
+
+        <dl class="stats">
+          <div class="stat">
+            <dt>Confidence</dt>
+            <dd id="predConfidence">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Status</dt>
+            <dd id="predState"><span class="pill">Idle</span></dd>
+          </div>
+          <div class="stat">
+            <dt>Execution time</dt>
+            <dd id="predTime">—</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="thumbs">
+        <figure>
+          <div class="thumb"><img id="thumbOriginal" alt="" hidden><span class="thumb__ph">Upload</span></div>
+          <figcaption>Your image</figcaption>
+        </figure>
+        <span class="thumbs__arrow" aria-hidden="true">→</span>
+        <figure>
+          <div class="thumb thumb--pixel"><img id="thumbProcessed" alt="" hidden><span class="thumb__ph">28×28</span></div>
+          <figcaption>Model input</figcaption>
+        </figure>
+      </div>
+    </article>
+  </section>
+
+  <!-- Probability distribution -->
+  <section class="card card--chart" id="insights">
+    <header class="card__head">
+      <div>
+        <h2>Probability distribution</h2>
+        <p class="muted">Softmax output of the model for every digit 0–9</p>
+      </div>
+      <span class="step">03</span>
+    </header>
+    <div class="chart-wrap">
+      <canvas id="probChart" aria-label="Probability per digit" role="img"></canvas>
+    </div>
+  </section>
+
+  <!-- Model info -->
+  <section class="card card--model" id="model">
+    <header class="card__head">
+      <div>
+        <h2>Model</h2>
+        <p class="muted" id="modelSub">Loading model details…</p>
+      </div>
+      <span class="step">04</span>
+    </header>
+    <div class="model-grid">
+      <dl class="kv" id="modelKv"></dl>
+      <ol class="layers" id="modelLayers"></ol>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">Powered by Machine Learning | MNIST Digit Recognition</div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% endblock %}

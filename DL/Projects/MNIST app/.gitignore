@@ -1,0 +1,29 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs / uploads (uploads are processed in memory and never stored)
+*.log
+logs/
+uploads/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
