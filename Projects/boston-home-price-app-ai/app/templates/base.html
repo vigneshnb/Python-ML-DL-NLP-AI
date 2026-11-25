@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Educational machine-learning demonstration that estimates a 1970s Boston census-tract median home value from 13 features.">
+  <meta name="theme-color" content="#F7F5F0">
+  <title>{% block title %}Home Value Estimator · Property Intelligence{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#estimator">Skip to the estimator</a>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="Home Value Estimator, back to top">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="40" height="40">
+        <span class="brand-text">
+          <span class="brand-name">Home Value Estimator</span>
+          <span class="brand-sub">Property Intelligence</span>
+        </span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
+      </button>
+
+      <nav class="site-nav" id="siteNav" aria-label="Primary">
+        <a href="#estimator">Estimator</a>
+        <a href="#about-model">The model</a>
+        <a href="#disclaimer">Limitations</a>
+        <span class="model-status" id="modelStatus" data-state="checking" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="status-text">Checking model…</span>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="32" height="32">
+        <p class="footer-title">Home Value Estimator | Machine Learning Demonstration</p>
+      </div>
+      <p class="footer-note">
+        Educational demonstration only. Built on the historical 1970s Boston Housing dataset,
+        which contains documented bias. Estimates are not property valuations and must not be
+        used for financial, housing, lending or investment decisions.
+      </p>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

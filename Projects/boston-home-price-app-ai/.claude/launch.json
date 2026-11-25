@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "home-value-estimator",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["run.py"],
+      "port": 5000
+    }
+  ]
+}

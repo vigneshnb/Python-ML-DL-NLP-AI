@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% macro fmt(v) -%}{{ ('%.6g' % v) }}{%- endmacro %}
+
+{% macro group_icon(id) -%}
+  <span class="group-icon" aria-hidden="true">
+  {%- if id == 'neighborhood' -%}
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+  {%- elif id == 'structure' -%}
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l8-6 8 6v10"/><path d="M4 20h16M9 20v-5h6v5M12 4v3"/></svg>
+  {%- elif id == 'access' -%}
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 9 5h6l5 14"/><path d="M12 7v2M12 12v2M12 17v2"/></svg>
+  {%- else -%}
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+  {%- endif -%}
+  </span>
+{%- endmacro %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 520 420" class="hero-skyline" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+      <path d="M0 360h520"/>
+      <path d="M40 360V220l60-48 60 48v140M70 360v-70h60v70"/>
+      <path d="M190 360V170h90v190M210 200h20v20h-20zM250 200h20v20h-20zM210 240h20v20h-20zM250 240h20v20h-20zM210 280h20v20h-20zM250 280h20v20h-20z"/>
+      <path d="M300 360V250l45-36 45 36v110M330 360v-50h30v50"/>
+      <path d="M410 360V120h70v240M425 150h15v15h-15zM450 150h15v15h-15zM425 185h15v15h-15zM450 185h15v15h-15zM425 220h15v15h-15zM450 220h15v15h-15zM425 255h15v15h-15zM450 255h15v15h-15z"/>
+      <circle cx="120" cy="90" r="34" stroke="#D6AD65"/>
+    </svg>
+  </div>
+  <div class="container hero-inner">
+    <span class="badge"><span class="badge-dot" aria-hidden="true"></span>Educational ML demonstration</span>
+    <h1>Understand Your Property's Estimated Value</h1>
+    <p class="lede">Explore an estimated property value using your selected characteristics and a machine learning model.</p>
+    <p class="hero-note">
+      The model was trained on 1970s Boston census tracts, so it estimates a historical
+      <em>neighbourhood median</em> in 1970s dollars, not the price of a specific home today.
+    </p>
+    <dl class="hero-facts" aria-label="Model facts">
+      <div><dt>Inputs</dt><dd>{{ schema.features|length }} characteristics</dd></div>
+      <div><dt>Trained on</dt><dd>404 census tracts</dd></div>
+      <div><dt>Output</dt><dd>Median value, 1970s USD</dd></div>
+      <div><dt>Response</dt><dd>Milliseconds</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="estimator container" id="estimator" aria-label="Estimator">
+  <form class="card form-card" id="estimateForm" novalidate autocomplete="off">
+    <div class="form-head">
+      <div>
+        <h2>Property characteristics</h2>
+        <p class="muted">All {{ schema.features|length }} values are required by the model. Hints show the range seen in training;
+          <em>Use training medians</em> fills each field with the median of the training data.</p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="fillMediansBtn">Use training medians</button>
+    </div>
+    <div class="progress" aria-hidden="true"><span class="progress-fill" id="progressFill"></span></div>
+
+    {% for group in groups %}
+    <fieldset class="field-group" data-group="{{ group.id }}">
+      <legend>
+        {{ group_icon(group.id) }}
+        <span class="group-title">{{ group.title }}</span>
+        <span class="group-index">{{ '%02d' % loop.index }} / {{ '%02d' % groups|length }}</span>
+      </legend>
+      <p class="group-desc">{{ group.description }}</p>
+
+      <div class="field-grid">
+        {% for f in group.features %}
+        {% set lo, hi = ranges[f.name] %}
+        <div class="field{% if f.control == 'toggle' %} field-toggle{% endif %}" data-field="{{ f.name }}">
+          {% if f.control == 'toggle' %}
+          <span class="field-label" id="label-{{ f.name }}">
+            {{ f.label }} <code class="feature-code">{{ f.name }}</code>
+          </span>
+          <div class="segmented" role="radiogroup" aria-labelledby="label-{{ f.name }}" aria-describedby="desc-{{ f.name }} err-{{ f.name }}">
+            {% for opt in f.options %}
+            <label class="segment">
+              <input type="radio" name="{{ f.name }}" value="{{ opt[0] }}" data-feature="{{ f.name }}">
+              <span>{{ opt[1] }} <small>({{ opt[0] }})</small></span>
+            </label>
+            {% endfor %}
+          </div>
+          {% else %}
+          <label class="field-label" for="f-{{ f.name }}">
+            {{ f.label }} <code class="feature-code">{{ f.name }}</code>
+          </label>
+          <div class="input-wrap">
+            <input class="input" type="number" inputmode="decimal" id="f-{{ f.name }}" name="{{ f.name }}"
+                   data-feature="{{ f.name }}" min="{{ fmt(f.min) }}" max="{{ fmt(f.max) }}" step="{{ fmt(f.step) }}"
+                   placeholder="e.g. {{ fmt(f.default) }}" aria-describedby="desc-{{ f.name }} err-{{ f.name }}">
+            {% if f.unit %}<span class="unit">{{ f.unit }}</span>{% endif %}
+          </div>
+          {% endif %}
+          <p class="field-desc" id="desc-{{ f.name }}">
+            {{ f.description }}
+            <span class="range-hint">Training range {{ fmt(lo) }} – {{ fmt(hi) }}</span>
+          </p>
+          <p class="field-error" id="err-{{ f.name }}" role="alert" aria-live="polite"></p>
+        </div>
+        {% endfor %}
+      </div>
+    </fieldset>
+    {% endfor %}
+
+    <div class="form-actions">
+      <p class="form-status muted" id="formStatus" aria-live="polite">Complete all fields to enable the estimate.</p>
+      <div class="action-buttons">
+        <button type="button" class="btn btn-secondary" id="clearBtn">Clear Form</button>
+        <button type="submit" class="btn btn-primary" id="predictBtn" disabled>
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Estimate Home Value</span>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <aside class="result-col" aria-label="Estimate result">
+    <div class="card result-card" id="resultCard" data-state="empty" aria-live="polite">
+      <div class="result-empty" id="resultEmpty">
+        <div class="empty-illustration" aria-hidden="true">
+          <svg viewBox="0 0 64 64" width="60" height="60"><path d="M10 30 32 12l22 18v22a2 2 0 0 1-2 2H40V40H24v14H12a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="50" cy="14" r="4" fill="#D6AD65" stroke="none"/></svg>
+        </div>
+        <h2>Your estimate will appear here</h2>
+        <p class="muted">Fill in the characteristics and select <strong>Estimate Home Value</strong>.</p>
+      </div>
+
+      <div class="result-loading" id="resultLoading" hidden>
+        <div class="skeleton skeleton-label"></div>
+        <div class="skeleton skeleton-value"></div>
+        <div class="skeleton skeleton-bar"></div>
+        <p class="muted">Running the model…</p>
+      </div>
+
+      <div class="result-error" id="resultError" hidden>
+        <h2>We couldn't produce an estimate</h2>
+        <p id="resultErrorText"></p>
+      </div>
+
+      <div class="result-body" id="resultBody" hidden>
+        <div class="result-hero">
+          <p class="eyebrow"><span class="eyebrow-rule" aria-hidden="true"></span>Estimated median value</p>
+          <p class="result-value" id="resultValue">—</p>
+          <p class="result-sub">
+            Model output <strong id="resultRaw">—</strong> <span>(thousands of 1970s US dollars)</span>
+          </p>
+        </div>
+        <dl class="result-meta">
+          <div><dt>Execution time</dt><dd id="resultTime">—</dd></div>
+          <div><dt>Model</dt><dd>ANN regressor · 13 inputs</dd></div>
+        </dl>
+
+        <div class="indicator" aria-label="Where the estimate falls within the training target range">
+          <div class="indicator-head">
+            <span>Position within training data range</span>
+          </div>
+          <div class="indicator-track">
+            <div class="indicator-fill" id="indicatorFill"></div>
+            <div class="indicator-median" id="indicatorMedian" title="Training median"></div>
+            <div class="indicator-marker" id="indicatorMarker"></div>
+          </div>
+          <div class="indicator-scale">
+            <span id="indicatorMin">—</span>
+            <span class="indicator-median-label" id="indicatorMedianLabel">median —</span>
+            <span id="indicatorMax">—</span>
+          </div>
+        </div>
+
+        <ul class="warnings" id="resultWarnings" hidden></ul>
+
+        <details class="result-section" open>
+          <summary>How your inputs compare to the training data</summary>
+          <p class="muted small">Standard deviations from the training mean: the exact values the model receives.</p>
+          <div class="zbars" id="zBars"></div>
+        </details>
+
+        <details class="result-section">
+          <summary>Submitted values</summary>
+          <dl class="summary-grid" id="inputSummary"></dl>
+        </details>
+
+        <button type="button" class="btn btn-ghost btn-block" id="newEstimateBtn">Start a new estimate</button>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<section class="container info-grid" id="about-model">
+  <article class="card info-card">
+    <span class="info-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7.5 7.5 10 10M16.5 7.5 14 10M7.5 16.5 10 14M16.5 16.5 14 14"/></svg></span>
+    <h2>About the model</h2>
+    <dl class="kv">
+      <div><dt>Architecture</dt><dd>Dense neural network 13 → 64 → 32 → 16 → 1</dd></div>
+      <div><dt>Training data</dt><dd>Keras Boston Housing, training split (404 tracts)</dd></div>
+      <div><dt>Preprocessing</dt><dd>StandardScaler fitted on the training split</dd></div>
+      <div><dt>Target</dt><dd>MEDV: median owner-occupied home value, in $1,000s (1970s)</dd></div>
+      <div><dt>Held-out error</dt><dd>≈ $2,800 mean absolute error on the 102-tract test split</dd></div>
+    </dl>
+  </article>
+  <article class="card info-card disclaimer" id="disclaimer">
+    <span class="info-icon info-icon-gold" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg></span>
+    <h2>Important limitations</h2>
+    <ul>
+      <li><strong>Educational only.</strong> This is a machine-learning demonstration, not an appraisal, lending decision or market valuation.</li>
+      <li><strong>Historical data.</strong> The dataset describes Boston-area census tracts in the 1970s. Values are capped at $50,000 and are in 1970s dollars.</li>
+      <li><strong>Not a property price.</strong> Each training row is a neighbourhood median, so the output does not describe an individual property's current price.</li>
+      <li><strong>Historical bias.</strong> The dataset includes the racially derived variable <code>B</code> and the <code>LSTAT</code> "lower status" variable. The model needs them as inputs, and they can encode discriminatory patterns.</li>
+      <li><strong>Do not use</strong> these estimates for financial, housing, lending or investment decisions.</li>
+    </ul>
+  </article>
+</section>
+
+<script type="application/json" id="featureSchema">{{ schema|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/form-logic.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}
