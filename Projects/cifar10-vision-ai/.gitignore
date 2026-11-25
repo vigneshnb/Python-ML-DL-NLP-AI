@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Secrets
+.env
+
+# Model weights: large binary. Deliberately NOT committed by default.
+# Ship it via scp/S3/Git LFS (see docs/DEPLOYMENT.md). Remove this line
+# only if you have decided to version the model in this repository.
+models/*.h5
+models/*.keras
+*.h5
+
+# Logs / OS / editors
+logs/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.ipynb_checkpoints/
