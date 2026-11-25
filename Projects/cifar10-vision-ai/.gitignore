@@ -12,9 +12,9 @@ venv/
 # Model weights: large binary. Deliberately NOT committed by default.
 # Ship it via scp/S3/Git LFS (see docs/DEPLOYMENT.md). Remove this line
 # only if you have decided to version the model in this repository.
-models/*.h5
-models/*.keras
-*.h5
+# models/*.h5
+# models/*.keras
+# *.h5
 
 # Logs / OS / editors
 logs/
